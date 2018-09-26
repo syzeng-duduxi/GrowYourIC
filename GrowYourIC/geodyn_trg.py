@@ -35,6 +35,7 @@ from . import mineral_phys
 #     return max(solution_1, solution_2)
 
 
+
 class ModelTRG(geodyn.Model):
 
     def __init__(self):
@@ -122,19 +123,17 @@ class ModelTRG(geodyn.Model):
         return intersection.zero_brentq(self.distance_to_radius, point, t0, a=0., b=t1)
 
     def proxy_singlepoint(self, point, proxy_type):
-        """ evaluate the proxy on a single positions.Point instance."""
+        """ evaluate the proxy on a single positions.Point instance.
+        
+        return a dictionnary {} 
+        """
         proxy = {}  # empty dictionnary
-
         x, y, z = point.x, point.y, point.z
-
         if proxy_type == "hemispheres":  #be careful, it's the hemisphere at the time t_end (not at time of freezing)
             proxy["hemispheres"] = self.hemispheres(point)
             return proxy  # no calculation of time, etc. 
-
-
         time = self.crystallisation_time([x, y, z], self.tau_ic)
         position_crys = self.crystallisation_position([x,y,z], time)
-
         # calculate the proxy needed (proxy_type value)
         if proxy_type == "age":
             proxy["age"] = (self.tau_ic - time) * 1e-6 * \
@@ -250,9 +249,8 @@ class ModelTRG(geodyn.Model):
             plt.quiver(mx[::10], my[::10], np.ma.masked_array(velocity[0], mask=trajectory_r >= self.rICB)[
                        ::10], np.ma.masked_array(velocity[1], mask=trajectory_r >= self.rICB)[::10], units='width')
         plt.axis("equal")
-        plt.xlim([-1, 1])
+        plt.xlim([-1, 1])  #should be -rICB, +rICB
         plt.ylim([-1, 1])
-        # plt.show()
 
     def translation_velocity(self):
         try:
@@ -270,7 +268,6 @@ class ModelTRG(geodyn.Model):
         phi = point.phi / 180. * np.pi
         theta = (90. - point.theta) * np.pi / 180.
         return np.sign(np.sin(theta)*np.cos(phi)*vx+ np.sin(theta)*np.sin(phi)*vy+ np.cos(theta)*vz)
-        
 
     def rotation_velocity(self, r):
         try:

@@ -20,6 +20,9 @@ classes:
 """
 from __future__ import division
 from __future__ import absolute_import
+#TO DO: verify if this is necessary? check with Python 2?
+
+
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
@@ -32,51 +35,13 @@ from . import positions
 from . import plot_data
 
 
-def read_from_file(filename, names=["PKIKP-PKiKP travel time residual", 
-                                    "turn lat",
-                                    "turn lon", 
-                                    "turn depth", 
-                                    "in lat", 
-                                    "in lon", 
-                                    "out lat", 
-                                    "out lon" ] ,
-                   slices="all"):
-    """ read seismic data repartition
+# Read from files with pandas: 
+## example: pd.read_table(self.filename, sep='\s+', names=self.slices, skiprows=10) 
+## example: pd.read_table(self.filename, sep='\s+', header=None)[nb_slices]
 
-    input parameters:
-    - filename: name of the data file
-    - names: names of the columns for the data set
-    - slices: names of columns for the output.
-    output:
-    - data : pandas DataFrame with all the datas.
-    Columns name are indicated by the variable "names".
-    """
-    data = pd.read_table(filename, sep=' ', names=names, skiprows=10)
-    if slices != "all":
-        data = data[slices]
-    return data
 
-# This function is way to complicated, and reshape work well for what we need. Keep it here in case we actually have randomly distributed points on a grid. 
-# def construct_meshgrid(x, y, z, info_x, info_y):
-#     """ Construct a meshgrid based on x, y and z, to plot contourf.
-#     x, y, z: 1D arrays, same size
-#     x, y are the positions, and z the value that you want to plot.
-#     info_x and info_y are the info to construct X and Y, using linspace.
-#     return X, Y, Z that can be used directly for contour and contourf.
-#     """
-#     min_x, max_x, N_x = info_x
-#     min_y, max_y, N_y = info_y
-#     x1 = np.linspace(min_x, max_x, N_x)
-#     y1 = np.linspace(min_y, max_y, N_y)
-#     X, Y = np.meshgrid(x1, y1)
-#     Z = -1. * np.ones_like(X)
-#     print(x1.shape, y1.shape, X.shape, Y.shape, z.shape)
-#     for it, z_element in enumerate(z):
-#         ix = [i for i, j in enumerate(x1) if j == x[it]]
-#         iy = [i for i, j in enumerate(y1) if j == y[it]]
-#         Z[ix, iy] = z_element
-#     return X, Y, Z
-# 
+
+
 
 class SeismicData(object):
     """ Class for seismic data """
@@ -113,6 +78,13 @@ class SeismicData(object):
             phi[i] = point.phi
         return r, theta, phi
 
+    def extract_zeta(self):
+        """ zeta values for all raypath (requires in and out points) """
+        zeta = np.empty([self.size, 1])
+        for i, ray in enumerate(self.data_points):
+            zeta[i] = ray.calc_zeta()
+        return zeta
+
     def map_plot(self, geodyn_model=''):
         """ plot data on a map."""
         # user should plot on map in the main code.
@@ -148,7 +120,6 @@ class SeismicData(object):
         plt.title(title)
         plt.xlabel("longitude of bottom turning point")
         plt.ylabel("proxy")
-        # plt.show()
 
     def distance_plot(self, geodyn_model='', point=positions.SeismoPoint(1., 0., 0.)):
         """ Plot proxy as function of the angular distance with point G """
@@ -165,27 +136,59 @@ class SeismicData(object):
         plt.xlabel(
             "Angular distance between turning point and ({} {})".format(theta1, phi1))
         plt.ylabel("proxy")
-        # plt.show()
 
 
 class SeismicFromFile(SeismicData):
     """Seismic data set from file."""
 
-    def __init__(self, filename="WD11.dat", RICB=1221., name="Data set from Waszek and Deuss 2011", shortname="WD11"):
+    def __init__(self, filename="WD11.dat", RICB=1221., name="Data set from Waszek and Deuss 2011", shortname="WD11", N="all"):
         SeismicData.__init__(self)
-        self.name = name #"Data set from Waszek and Deuss 2011"
-        self.shortname = shortname # "WD11"
-        # seismic data set (from Lauren's file)
         self.filename = filename
+        self.rICB = RICB
+        if N=="all": 
+            self.limited_nber_points = [False, 0]
+        else: 
+            self.limited_nber_points = [True, N]
+        self.isitknowndataset()
+
+    def isitknowndataset(self, verbose=True):
+        """ Check if the data set is already known. If not, explain how to add one. 
+
+        Required variables to specify: 
+        self.name and self.shortname : names to be printed on figures and filenames (text)
+        self.data_points : all the raypaths (numpy array)
+        self.size : total size of the data set (int, number of points)
+
+        """
+        if self.filename[-8:] == "WD11.dat":
+            self.name = "Data set from Waszek and Deuss 2011"
+            self.shortname = "WD11"
+            self.WD11()
+            #if verbose: 
+            print("Waszek and Deuss 2011 successfully loaded. {} trajectories.".format(self.size))
+        elif self.filename[-24:] == "DF_sample_ksi_sorted.dat":
+            self.name = "Data set from J. Stephenson"
+            self.shortname = "Steph."
+            self.Stephenson()
+            #if verbose: 
+            print("Data set successfully loaded. {} trajectories.".format(self.size))
+        else:
+            print("There is an Error. You tried to load a data file of real distribution, but the file was not recognized.")
+            
+    def WD11(self):
+        """ the data set is the Waszek and Deuss 2011 in the file WD11.dat """
         self.slices = ["PKIKP-PKiKP travel time residual", "turn lat",
                        "turn lon", "turn depth", "in lat", "in lon", "out lat", "out lon"]
-        self.data = read_from_file(filename)
+        self.data = pd.read_table(self.filename, sep='\s+', names=self.slices, skiprows=10)#read_from_file(self.filename)
+        if self.limited_nber_points[0]==True:
+            print(self.limited_nber_points[1])
+            self.data = self.data.iloc[:self.limited_nber_points[1]]
         self.size = self.data.shape[0]
         self.data_points = []
         for _, row in self.data.iterrows():
             ray = positions.Raypath()
             ray.add_b_t_point(positions.SeismoPoint(
-                1. - row["turn depth"] / RICB, row["turn lat"], row["turn lon"]))
+                1. - row["turn depth"] / self.rICB, row["turn lat"], row["turn lon"]))
             in_point = positions.SeismoPoint(1., row["in lat"], row["in lon"])
             out_point = positions.SeismoPoint(
                 1., row["out lat"], row["out lon"])
@@ -193,8 +196,29 @@ class SeismicFromFile(SeismicData):
             ray.residual = row["PKIKP-PKiKP travel time residual"]
             self.data_points = np.append(self.data_points, ray)
 
+    def Stephenson(self):  #the "turn depth" is actually the "turn radius" ! 
+        self.slices = ["turn lat", "turn lon", "turn depth", "in lat", "in lon", 
+                       "out lat", "out lon", "travel time residual relative to ak135"]
+        nb_slices = [11,12,13,14,15,16,17,24]# [12,13,14,15,16,17,18,24]
+        self.data = pd.read_table(self.filename, sep='\s+', header=None)[nb_slices]
+        if self.limited_nber_points[0]==True:
+            print(self.limited_nber_points[1])
+            self.data = self.data.iloc[:self.limited_nber_points[1]]
+        self.data.columns = self.slices
+        self.size = self.data.shape[0]
+        for _, row in self.data.iterrows():
+            ray = positions.Raypath()
+            ray.add_b_t_point(positions.SeismoPoint(
+                row["turn depth"] / self.rICB, row["turn lat"], row["turn lon"]))
+            in_point = positions.SeismoPoint(1., row["in lat"], row["in lon"])
+            out_point = positions.SeismoPoint(
+                1., row["out lat"], row["out lon"])
+            ray.add_property({'in_point':in_point, 'out_point':out_point})
+            ray.residual = row["travel time residual relative to ak135"]  # careful here with the names of the column for residual!
+            self.data_points = np.append(self.data_points, ray)
+
     def real_residual(self):
-        """Extract the values of residuals from the file"""
+        """ Extract the values of residuals from the data. """
         value = []
         for ray in self.data_points:
             value = np.append(value, ray.residual)
@@ -303,7 +327,6 @@ class PerfectSamplingEquator(SeismicData):
         plt.axis("off")
 
 
-
 class RandomData(SeismicData):
     """ Random repartition of point, between depth 106 and 15km"""
 
@@ -315,7 +338,6 @@ class RandomData(SeismicData):
         self.shortname = "random_0-100"
         self.random_method = "uniform"
         self.depth = [15. / 1221., 106. / 1221.]
-
         for _ in range(N):
             ray = positions.Raypath()
             ray.add_b_t_point(positions.RandomPoint(
@@ -357,7 +379,6 @@ class PerfectSamplingEquatorRadial(SeismicData):
         plt.ylabel("proxy")
 
 
-
 class Equator_upperpart(SeismicData):
     """ meshgrid for the uppermost part of IC (2-120km), at the equator."""
 
@@ -371,7 +392,6 @@ class Equator_upperpart(SeismicData):
         self.shortname = "meshgrid"
         self.depth = [d0 / 1221., d1 / 1221.]
         self.theta = 0. # at the equator
-
         for depth in np.linspace(self.depth[0], self.depth[1], Nr):
             for phi in np.linspace(-180., 180., Np):
                 ray = positions.Raypath()
@@ -386,7 +406,6 @@ class Equator_upperpart(SeismicData):
         R = r.reshape(-1, self.Np)
         PHI = p.reshape(-1, self.Np)
         PROXY = proxy.reshape(-1, self.Np)
-
         return R, PHI, PROXY 
 
 
@@ -418,7 +437,146 @@ class PerfectSamplingSurface(SeismicData):
         THETA = t.reshape(-1, self.N)
         PHI = p.reshape(-1, self.N)
         PROXY = proxy.reshape(-1, self.N)
-
         return THETA, PHI, PROXY 
 
+
+
+
+class PerfectSamplingCut(SeismicData):
+
+    def __init__(self, N, rICB=1.):
+        SeismicData.__init__(self)
+        self.rICB = rICB
+        self.N = N
+        self.name = "Perfect sampling in the equatorial plane"
+        self.shortname = "equatorial"
+        for x in np.linspace(-self.rICB, self.rICB, N):
+            for z in np.linspace(-self.rICB, self.rICB, N):
+                ray = positions.Raypath()
+                ray.add_b_t_point(positions.CartesianPoint(x, 0., z))
+                if ray.bottom_turning_point.r <= self.rICB:
+                    self.data_points = np.append(self.data_points, ray)
+        self.size = len(self.data_points)
+
+    def plot_c_vec(self, modelgeodyn, proxy=1, cm=plt.get_cmap('summer'), nameproxy=""):
+        """ Plot contourf of the proxy + streamlines of the flow in meridional cross section.
+
+        Args:
+            modelgeodyn: a geodyn.Model instance
+            proxy: the values to be plot are either defined as self.proxy,
+            given as proxy in the function, or set to 1 if not given.
+        """
+
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal')
+        x1 = np.linspace(-self.rICB, self.rICB, self.N)
+        z1 = np.linspace(-self.rICB, self.rICB, self.N)
+        X, Z = np.meshgrid(x1, z1)
+        Y = -1. * np.ones_like(X)
+        #Y = np.zeros_like(X)
+        x, y, z = self.extract_xyz("bottom_turning_point")
+        for it, pro in enumerate(proxy):
+            ix = [i for i, j in enumerate(x1) if j == x[it]]
+            iz = [i for i, j in enumerate(z1) if j == z[it]]
+            Y[ix, iz] = pro
+        mask_Y = Y == -1
+        Y = np.ma.array(Y, mask=mask_Y)
+        sc = ax.contourf(Z, X, Y, 40, cmap=cm)
+        #sc2 = ax.contour(Y, X, Z, 10, colors='w')
+
+        Vx, Vz = np.empty((self.N, self.N)), np.empty((self.N, self.N))
+        for ix, _ in enumerate(x1):
+            for iz, _ in enumerate(z1):
+                velocity = modelgeodyn.velocity(
+                    modelgeodyn.tau_ic, [X[ix, iz], 0., Z[ix, iz]])
+                Vx[ix, iz] = velocity[0]
+                Vz[ix, iz] = velocity[2]
+        Vx = np.ma.array(Vx, mask=mask_Y)
+        Vz = np.ma.array(Vz, mask=mask_Y)
+        #ax.quiver(X, Y, Vx, Vy)
+        ax.streamplot(X, Z, Vx, Vz, color='black',
+                      arrowstyle='->', density=0.5)
+        theta = np.linspace(0., 2 *np.pi, 1000)
+        ax.plot(np.sin(theta), np.cos(theta), 'k', lw=3)
+        ax.set_xlim([-1.1, 1.1])
+        ax.set_ylim([-1.1, 1.1])
+
+        cbar = plt.colorbar(sc)
+        cbar.set_label(nameproxy)
+        title = "Geodynamical model: {}".format(modelgeodyn.name)
+        plt.title(title)
+        plt.axis("off")
+        # plt.show()
+
+    def plot_c(self, modelgeodyn, proxy=1, cm=plt.get_cmap('summer'), nameproxy=""):
+        """ Plot contourf of the proxy in meridional cross section -- no stream lines.
+        TODO To be modified
+        Args:
+            modelgeodyn: a geodyn.Model instance
+            proxy: the values to be plot are either defined as self.proxy,
+            given as proxy in the function, or set to 1 if not given.
+        """
+
+        fig, ax = plt.subplots()
+        ax.set_aspect('equal')
+        x1 = np.linspace(-self.rICB, self.rICB, self.N)
+        y1 = np.linspace(-self.rICB, self.rICB, self.N)
+        X, Y = np.meshgrid(x1, y1)
+        Z = -1. * np.ones_like(X)
+        x, y, _ = self.extract_xyz("bottom_turning_point")
+        for it, pro in enumerate(proxy):
+            ix = [i for i, j in enumerate(x1) if j == x[it]]
+            iy = [i for i, j in enumerate(y1) if j == y[it]]
+            Z[ix, iy] = pro
+        mask_Z = Z == -1
+        Z = np.ma.array(Z, mask=mask_Z)
+        sc = ax.contourf(Y, X, Z, 10, cmap=cm)
+        #sc2 = ax.contour(Y, X, Z, 10, colors='w')
+
+        theta = np.linspace(0., 2 * np.pi, 1000)
+        ax.plot(np.sin(theta), np.cos(theta), 'k', lw=3)
+        ax.set_xlim([-1.1, 1.1])
+        ax.set_ylim([-1.1, 1.1])
+
+        cbar = plt.colorbar(sc)
+        cbar.set_label(nameproxy)
+        title = "Geodynamical model: {}".format(modelgeodyn.name)
+        plt.title(title)
+        plt.axis("off")
+
+
+
+# Joanne Stephenson data set: 
+#12 - bottoming latitude
+#13 - bottoming longitude
+#14 - bottoming depth
+#15 - IC entry lat 
+#16 - IC entry lon
+#17 - IC exit lat
+#18 - IC exit lon
+#25 - travel time residual relative to ak135
+
+
+
+# This function is way to complicated, and reshape work well for what we need. Keep it here in case we actually have randomly distributed points on a grid. 
+# def construct_meshgrid(x, y, z, info_x, info_y):
+#     """ Construct a meshgrid based on x, y and z, to plot contourf.
+#     x, y, z: 1D arrays, same size
+#     x, y are the positions, and z the value that you want to plot.
+#     info_x and info_y are the info to construct X and Y, using linspace.
+#     return X, Y, Z that can be used directly for contour and contourf.
+#     """
+#     min_x, max_x, N_x = info_x
+#     min_y, max_y, N_y = info_y
+#     x1 = np.linspace(min_x, max_x, N_x)
+#     y1 = np.linspace(min_y, max_y, N_y)
+#     X, Y = np.meshgrid(x1, y1)
+#     Z = -1. * np.ones_like(X)
+#     print(x1.shape, y1.shape, X.shape, Y.shape, z.shape)
+#     for it, z_element in enumerate(z):
+#         ix = [i for i, j in enumerate(x1) if j == x[it]]
+#         iy = [i for i, j in enumerate(y1) if j == y[it]]
+#         Z[ix, iy] = z_element
+#     return X, Y, Z
+# 
 

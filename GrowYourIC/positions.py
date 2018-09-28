@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# Time-stamp: <2016-02-22 21:21:17 marine>
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 
 # Author : Marine Lasbleis

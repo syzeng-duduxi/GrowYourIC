@@ -25,7 +25,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
-# from mpl_toolkits.basemap import Basemap  # to render maps
 import pandas as pd
 
 # personal routines

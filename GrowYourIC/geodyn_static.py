@@ -17,7 +17,7 @@ from . import geodyn
 
 
 class Hemispheres(geodyn.Model):
-    """ Static hemispheres: 
+    """ Static hemispheres:
 
         proxy is just defines as -1 in the western hemisphere and +1 in the eastern one."""
 
@@ -30,7 +30,8 @@ class Hemispheres(geodyn.Model):
     def proxy_singlepoint(self, point, proxy_type):
         """ -1 in western hemisphere, +1 in the eastern hemisphere"""
         proxy = {}  # empty dict
-        proxy["hemisphere"] = np.sign(np.sin((point.phi + self.anglephi) * np.pi / 180.))
+        proxy["hemisphere"] = np.sign(
+            np.sin((point.phi + self.anglephi) * np.pi / 180.))
         return proxy
 
     def velocity(self, time, point):
@@ -44,10 +45,6 @@ class Hemispheres(geodyn.Model):
         pass
 
 
-
-
-
-
 class Radial_sym(geodyn.Model):
     """ Simple radial symmetry (no flow)
 
@@ -59,10 +56,11 @@ class Radial_sym(geodyn.Model):
         self.name = "Radial symmetry"
         self.tau_ic = 0.
 
-        if fonction == None:   #TODO maybe should be something as "check if self.radial_dependency is defined, and if not, then defines it"?
+        if fonction is None:  # TODO maybe should be something as "check if self.radial_dependency is defined, and if not, then defines it"?
             def fonction(r):
                 return r
-        self.radial_dependency = fonction #has to be a function with 1 argument (radius)
+        # has to be a function with 1 argument (radius)
+        self.radial_dependency = fonction
 
     def proxy_singlepoint(self, point, proxy_type):
         """  """
@@ -86,10 +84,10 @@ class Innermost_IC(Radial_sym):
     """ """
 
     def __init__(self, radius_IIC):
-        self.radius_IIC = radius_IIC 
+        self.radius_IIC = radius_IIC
 
         def fonction(r):
-            if r>self.radius_IIC:
+            if r > self.radius_IIC:
                 answer = 1.
             else:
                 answer = 0.

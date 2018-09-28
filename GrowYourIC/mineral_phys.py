@@ -17,8 +17,10 @@ import pkg_resources  # to use data files of the package
 
 # IMPORTANT : all the functions here use dimensional quantities in unit SI !
 
-DATA_PATH = pkg_resources.resource_filename('GrowYourIC', 'data/CM2008_data.mat')
+DATA_PATH = pkg_resources.resource_filename(
+    'GrowYourIC', 'data/CM2008_data.mat')
 print(DATA_PATH)
+
 
 def export_matlab_data(name_data, file_name=DATA_PATH):
     """ Values for polynomial fit of the velocity and attenuation are included in data.mat. Scipy export them as a dictionary."""
@@ -44,7 +46,7 @@ def adimensional_frequency(size, v=11030., freq=1.):
 
 def convert_CM2008_velocity(kR, poly):
     """ Data from Fig 3 and 4 of Calvet and Margerin 2008 have been stored as polynomial values. This function transform them to a function:
-        for example, with poly = Vp_poly, 
+        for example, with poly = Vp_poly,
         give Vp as function of kR (adimensional frequency)"""
 #    if any(min(abs(np.log10(kR)+2),abs(np.log10(kR-1))) < 1e-4):
 #        warnings.warn('heaviside fn may be computing 0.5')
@@ -56,7 +58,7 @@ def convert_CM2008_velocity(kR, poly):
 
 def convert_CM2008_attenuation(kR, poly):
     """ Data from Fig 3 and 4 of Calvet and Margerin 2008 have been stored as polynomial values. This function transform them to a function:
-        for example, with poly = Qp_poly, 
+        for example, with poly = Qp_poly,
         give attenuation as function of kR (adimensional frequency)"""
 #    if min(abs(np.log10(kR)+2),abs(np.log10(kR-1))) < 1e-4:
 #        warnings.warn('heaviside fn may be computing 0.5')

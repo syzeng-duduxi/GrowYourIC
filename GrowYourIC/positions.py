@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
-
 # Author : Marine Lasbleis
+""" Define classes and functions to play with positions and coordinates systems. """
+
 
 from __future__ import division
 from __future__ import absolute_import
@@ -50,7 +51,6 @@ def from_cartesian_to_seismo(x, y, z):
         phi = np.where(y >= 0., np.arccos(x / np.sqrt(x**2 + y**2)),
                        2. * np.pi - np.arccos(x / np.sqrt(x**2 + y**2)))
         phi = phi * 180. / np.pi
-        # phi = np.arctan(y/x)*180./np.pi # longitude, in degree
     return r, 90. - theta, phi
 
 
@@ -98,7 +98,6 @@ class Point():
     """
 
     def __init__(self):
-
         self.x, self.y, self.z, self.r, self.theta, self.phi = None, None, None, None, None, None
 
     def add_cartesian(self):

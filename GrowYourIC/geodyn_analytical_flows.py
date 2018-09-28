@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
-
+""" Define classes for models from analytical solutions (Yoshida and Karato's models) """
 
 from __future__ import division
 from __future__ import absolute_import

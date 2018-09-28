@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
-
+""" Define classes for geodynnamical models combining growth, translation and rotation. """
 
 from __future__ import division
 from __future__ import absolute_import
@@ -9,7 +9,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
-from mpl_toolkits.basemap import Basemap  # to render maps
 import math
 from scipy.integrate import ode
 from scipy.optimize import fsolve

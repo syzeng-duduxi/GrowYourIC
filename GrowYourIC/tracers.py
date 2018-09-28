@@ -32,11 +32,9 @@ class Tracer():
         point = [initial_position.x, initial_position.y, initial_position.z]
         self.crystallization_time = model.crystallisation_time(point, tau_ic)
         num_t = min(2, floor((tau_ic - self.crystallization_time) / dt))
-
         # need to find cristalisation time of the particle
         # then calculate the number of steps, based on the required dt
         # then calculate the trajectory
-
         self.traj_x, self.traj_y, self.traj_z = self.model.trajectory_single_point(
             self.initial_position, t0, t1, num_t)
         self.time = np.linspace(t0, t1, num_t)

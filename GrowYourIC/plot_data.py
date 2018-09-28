@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
-
 # Author : Marine Lasbleis
+""" Define routines for maps. Maybe non-useful. """
 
 
 import numpy as np

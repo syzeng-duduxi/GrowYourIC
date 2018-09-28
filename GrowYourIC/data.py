@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
-
 """ Module data.py
 
 This module define the classes SeismicData() to handle seismic data set.
@@ -107,7 +106,7 @@ class SeismicData(object):
     def phi_plot(self, geodyn_model=''):
         """ Plot proxy as function of longitude """
         # user should use pyplot.plot functions in the main code
-        fig, ax = plt.subplots()
+        _fig, ax = plt.subplots()
         _, _, phi = self.extract_rtp("bottom_turning_point")
         ax.plot(phi, self.proxy, '.')
         title = "Dataset: {},\n geodynamic model: {}".format(

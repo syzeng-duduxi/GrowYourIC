@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
-
+""" Defines classes for static models, derived from geodyn classes. """
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures

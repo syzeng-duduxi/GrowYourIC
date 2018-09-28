@@ -152,7 +152,6 @@ class Point():
         return np.sin(theta) * np.cos(phi) * vx + np.sin(theta) * \
             np.sin(phi) * vy + np.cos(theta) * vz
 
-    # ,type_="turningpoint", seismo="surface"):
     def random_point(self, set_method="uniform", depth=[0., 1.], rICB=1.):
         """ Create a random point (not raypath)
 
@@ -353,23 +352,3 @@ class Raypath():
             x + solutions[1] * v_x,
             y + solutions[1] * v_y,
             z + solutions[1] * v_z)
-
-
-# TODO
-# calculate zeta from in/out points
-# calculate bottom turning point
-
-if __name__ == "__main__":
-
-    ray = Raypath()
-    ray.in_point, ray.out_point = CartesianPoint(
-        10, 20, -10), CartesianPoint(0, 40, -40)
-
-    print(ray.calc_zeta())
-
-    ray = Raypath()
-    ray.bottom_turning_point = SeismoPoint(0.9, 0, 0)
-    ray.direction = 90
-    ray.calc_in_out_with_zeta_bt(1.)
-    print(ray.in_point.r, ray.in_point.x, ray.in_point.y, ray.in_point.z)
-    print(ray.out_point.r, ray.out_point.x, ray.out_point.y, ray.out_point.z)

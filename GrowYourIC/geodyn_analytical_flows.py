@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
 
@@ -43,29 +43,29 @@ def e_z(r, theta, phi):
 
 class Analytical_Model(geodyn.Model):
 
-    def integration_trajectory(self, t1, r0, t0):
-        """ integration of the equation dr(t)/dt = v(r,t)
+    # def integration_trajectory(self, t1, r0, t0):
+    #     """ integration of the equation dr(t)/dt = v(r,t)
 
-        return the position of the point at the time t1.
-        r0: initial position
-        t0: initial time
-        t1: tmax of the integration
-            """
-        r = ode(self.velocity).set_integrator('dopri5')
-        # .set_f_params() if the function has any parameters
-        r.set_initial_value(r0, t0)
-        return np.real(r.integrate(r.t + (t1 - t0)))
+    #     return the position of the point at the time t1.
+    #     r0: initial position
+    #     t0: initial time
+    #     t1: tmax of the integration
+    #         """
+    #     r = ode(self.velocity).set_integrator('dopri5')
+    #     # .set_f_params() if the function has any parameters
+    #     r.set_initial_value(r0, t0)
+    #     return np.real(r.integrate(r.t + (t1 - t0)))
 
-    def trajectory_single_point(self, point, t0, t1, num_t):
-        """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps. 
-        """
-        time = np.linspace(t0, t1, num_t)
-        x, y, z = np.zeros(num_t), np.zeros(num_t), np.zeros(num_t)
-        x[0], y[0], z[0] = point.x, point.y, point.z
-        for i, t in enumerate(time):
-            point = self.integration_trajectory(t, [x[0], y[0], z[0]], t0)
-            x[i], y[i], z[i] = point[0], point[1], point[2]
-        return x, y, z
+    # def trajectory_single_point(self, point, t0, t1, num_t):
+    #     """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps. 
+    #     """
+    #     time = np.linspace(t0, t1, num_t)
+    #     x, y, z = np.zeros(num_t), np.zeros(num_t), np.zeros(num_t)
+    #     x[0], y[0], z[0] = point.x, point.y, point.z
+    #     for i, t in enumerate(time):
+    #         point = self.integration_trajectory(t, [x[0], y[0], z[0]], t0)
+    #         x[i], y[i], z[i] = point[0], point[1], point[2]
+    #     return x, y, z
 
     def proxy_singlepoint(self, point, proxy_type):
         """ evaluate the proxy on a single positions.Point instance."""
@@ -98,7 +98,7 @@ class Analytical_Model(geodyn.Model):
     def u_a(self, t):
         """ u_growth/r_icb """
         return 1./self.tau_ic #TODO verify (not true for alpha != 0.5 )
-        
+
     def crystallisation_time(self, point, tau_ic):
         """ Return the crystallisation time.
 
@@ -171,15 +171,15 @@ class Analytical_Model(geodyn.Model):
         return deformation_acc
 
     def deformation(self, time, point):
-        """ Von Mises equivalent strain 
-        
+        """ Von Mises equivalent strain
+
         sqrt(sum epsilon**2)
         (given as equivalent strain / eta, as eta not defined)
         !! no phi velocities
         inputs:
             -   time: float
             -   point: positions.Point instance
-        output: float 
+        output: float
         """
         # spherical coordinates
         Point_full_position = point # positions.CartesianPoint(point[0], point[1], point[2])

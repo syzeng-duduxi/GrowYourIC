@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 # Time-stamp: <2016-02-22 21:53:55 marine>
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
 

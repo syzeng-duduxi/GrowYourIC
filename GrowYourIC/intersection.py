@@ -1,4 +1,4 @@
-#!/usr/local/bin/python 
+#!/usr/bin/env python3
 # Author: Marine Lasbleis
 
 from __future__ import division

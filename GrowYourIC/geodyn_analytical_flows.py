@@ -52,30 +52,6 @@ def e_z(r, theta, phi):
 
 class Analytical_Model(geodyn.Model):
 
-    # def integration_trajectory(self, t1, r0, t0):
-    #     """ integration of the equation dr(t)/dt = v(r,t)
-
-    #     return the position of the point at the time t1.
-    #     r0: initial position
-    #     t0: initial time
-    #     t1: tmax of the integration
-    #         """
-    #     r = ode(self.velocity).set_integrator('dopri5')
-    #     # .set_f_params() if the function has any parameters
-    #     r.set_initial_value(r0, t0)
-    #     return np.real(r.integrate(r.t + (t1 - t0)))
-
-    # def trajectory_single_point(self, point, t0, t1, num_t):
-    #     """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps.
-    #     """
-    #     time = np.linspace(t0, t1, num_t)
-    #     x, y, z = np.zeros(num_t), np.zeros(num_t), np.zeros(num_t)
-    #     x[0], y[0], z[0] = point.x, point.y, point.z
-    #     for i, t in enumerate(time):
-    #         point = self.integration_trajectory(t, [x[0], y[0], z[0]], t0)
-    #         x[i], y[i], z[i] = point[0], point[1], point[2]
-    #     return x, y, z
-
     def proxy_singlepoint(self, point, proxy_type):
         """ evaluate the proxy on a single positions.Point instance."""
         proxy = {}  # empty dictionnary
@@ -143,7 +119,6 @@ class Analytical_Model(geodyn.Model):
 
             """
         trajectory = self.integration_trajectory(t, r0, t0)
-        #r, t, p = positions.from_cartesian_to_seismo(trajectory[0], trajectory[1], trajectory[2])
         r = trajectory[0]**2 + trajectory[1]**2 + trajectory[2]**2
         return np.sqrt(r)
 
@@ -156,7 +131,6 @@ class Analytical_Model(geodyn.Model):
         t1: tmax of the integration
             """
         r = ode(self.velocity).set_integrator('dopri5')
-        # .set_f_params() if the function has any parameters
         r.set_initial_value(r0, t0)
         return np.real(r.integrate(r.t + (t1 - t0)))
 
@@ -196,8 +170,6 @@ class Analytical_Model(geodyn.Model):
             -   point: positions.Point instance
         output: float
         """
-        # spherical coordinates
-        # positions.CartesianPoint(point[0], point[1], point[2])
         Point_full_position = point
         r, theta, phi = Point_full_position.r, (
             90. - Point_full_position.theta) * np.pi / 180., Point_full_position.phi * np.pi / 180.
@@ -333,7 +305,6 @@ class Model_LorentzForce(Analytical_Model):
         point: [x, y, z]
         Output: float
         """
-        # TODO add value P
         P = self.P
         return (-r**6 + 14. / 5. * r**4 - 9. / 5. * r**2 + 204. / 5 * r**4 / (19. +
                                                                               5. * P) - 544. / 5. * r**2 / (19. + 5. * P)) / (3.**3 * 7. * np.sqrt(5.))
@@ -421,8 +392,3 @@ def partial_derivative(func, var=0, point=[]):
         args[var] = x
         return func(*args)
     return derivative(wraps, point[var], dx=1e-5)
-
-
-if __name__ == "__main__":
-
-    Yoshida = Model_Yoshida96()

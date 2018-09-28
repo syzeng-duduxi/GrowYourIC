@@ -19,8 +19,6 @@ classes:
 """
 from __future__ import division
 from __future__ import absolute_import
-# TO DO: verify if this is necessary? check with Python 2?
-
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
@@ -90,7 +88,7 @@ class SeismicData(object):
         proxy = np.array([self.proxy]).T.astype(float)
         sc = m.scatter(x, y, c=proxy, zorder=10, cmap=colormap)
 
-        # TO DO : make a function to plot great circles correctly!
+        # TODO : make a function to plot great circles correctly!
         # r1, theta1, phi1 = self.extract_in() #use extract_rtp()
         #r2, theta2, phi2 = self.extract_out()
         # for i, t in enumerate(theta1):
@@ -101,11 +99,9 @@ class SeismicData(object):
             self.name, geodyn_model)
         plt.title(title)
         plt.colorbar(sc)
-        # plt.show()
 
     def phi_plot(self, geodyn_model=''):
         """ Plot proxy as function of longitude """
-        # user should use pyplot.plot functions in the main code
         _fig, ax = plt.subplots()
         _, _, phi = self.extract_rtp("bottom_turning_point")
         ax.plot(phi, self.proxy, '.')
@@ -118,7 +114,6 @@ class SeismicData(object):
     def distance_plot(self, geodyn_model='',
                       point=positions.SeismoPoint(1., 0., 0.)):
         """ Plot proxy as function of the angular distance with point G """
-        # user should use pyplot.plot functions in the main code
         fig, ax = plt.subplots()
         _, theta, phi = self.extract_rtp("bottom_turning_point")
         theta1, phi1 = point.theta, point.phi
@@ -160,17 +155,17 @@ class SeismicFromFile(SeismicData):
             self.name = "Data set from Waszek and Deuss 2011"
             self.shortname = "WD11"
             self.WD11()
-            # if verbose:
-            print("Waszek and Deuss 2011 successfully loaded. {} trajectories.".format(
-                self.size))
+            if verbose:
+                print("Waszek and Deuss 2011 successfully loaded. {} trajectories.".format(
+                    self.size))
         elif self.filename[-24:] == "DF_sample_ksi_sorted.dat":
             self.name = "Data set from J. Stephenson"
             self.shortname = "Steph."
             self.Stephenson()
-            # if verbose:
-            print(
-                "Data set successfully loaded. {} trajectories.".format(
-                    self.size))
+            if verbose:
+                print(
+                    "Data set successfully loaded. {} trajectories.".format(
+                        self.size))
         else:
             print("There is an Error. You tried to load a data file of real distribution, but the file was not recognized.")
 
@@ -178,7 +173,6 @@ class SeismicFromFile(SeismicData):
         """ the data set is the Waszek and Deuss 2011 in the file WD11.dat """
         self.slices = ["PKIKP-PKiKP travel time residual", "turn lat",
                        "turn lon", "turn depth", "in lat", "in lon", "out lat", "out lon"]
-        # read_from_file(self.filename)
         self.data = pd.read_table(
             self.filename, sep='\s+', names=self.slices, skiprows=10)
         if self.limited_nber_points[0] == True:
@@ -254,7 +248,6 @@ class PerfectSamplingEquator(SeismicData):
             proxy: the values to be plot are either defined as self.proxy,
             given as proxy in the function, or set to 1 if not given.
         """
-
         fig, ax = plt.subplots()
         ax.set_aspect('equal')
         x1 = np.linspace(-self.rICB, self.rICB, self.N)
@@ -270,7 +263,6 @@ class PerfectSamplingEquator(SeismicData):
         Z = np.ma.array(Z, mask=mask_Z)
         sc = ax.contourf(Y, X, Z, 10, cmap=cm)
         #sc2 = ax.contour(Y, X, Z, 10, colors='w')
-
         Vx, Vy = np.empty((self.N, self.N)), np.empty((self.N, self.N))
         for ix, _ in enumerate(x1):
             for iy, _ in enumerate(y1):
@@ -287,7 +279,6 @@ class PerfectSamplingEquator(SeismicData):
         ax.plot(np.sin(theta), np.cos(theta), 'k', lw=3)
         ax.set_xlim([-1.1, 1.1])
         ax.set_ylim([-1.1, 1.1])
-
         cbar = plt.colorbar(sc)
         cbar.set_label(nameproxy)
         title = "Geodynamical model: {}".format(modelgeodyn.name)
@@ -304,7 +295,6 @@ class PerfectSamplingEquator(SeismicData):
             proxy: the values to be plot are either defined as self.proxy,
             given as proxy in the function, or set to 1 if not given.
         """
-
         fig, ax = plt.subplots()
         ax.set_aspect('equal')
         x1 = np.linspace(-self.rICB, self.rICB, self.N)
@@ -320,12 +310,10 @@ class PerfectSamplingEquator(SeismicData):
         Z = np.ma.array(Z, mask=mask_Z)
         sc = ax.contourf(Y, X, Z, 10, cmap=cm)
         #sc2 = ax.contour(Y, X, Z, 10, colors='w')
-
         theta = np.linspace(0., 2 * np.pi, 1000)
         ax.plot(np.sin(theta), np.cos(theta), 'k', lw=3)
         ax.set_xlim([-1.1, 1.1])
         ax.set_ylim([-1.1, 1.1])
-
         cbar = plt.colorbar(sc)
         cbar.set_label(nameproxy)
         title = "Geodynamical model: {}".format(modelgeodyn.name)

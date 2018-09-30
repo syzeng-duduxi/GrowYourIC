@@ -17,6 +17,7 @@ classes:
     RandomData: random data, well partitioned on the horizontal, and between 15 and 106km
     PerfectSamplingSurface
 """
+
 from __future__ import division
 from __future__ import absolute_import
 
@@ -129,7 +130,7 @@ class SeismicData(object):
 
 
 class SeismicFromFile(SeismicData):
-    """Seismic data set from file."""
+    """ Seismic data set from a data file (csv) """
 
     def __init__(self, filename="WD11.dat", RICB=1221.,
                  name="Data set from Waszek and Deuss 2011", shortname="WD11", N="all"):
@@ -224,6 +225,7 @@ class SeismicFromFile(SeismicData):
 
 
 class PerfectSamplingEquator(SeismicData):
+    """ Perfect sampling on the equator cross section, on a cartesian grid. """
 
     def __init__(self, N, rICB=1.):
         SeismicData.__init__(self)
@@ -341,7 +343,7 @@ class RandomData(SeismicData):
 
 
 class PerfectSamplingEquatorRadial(SeismicData):
-    """ Points in the equatorial cross section, along radius"""
+    """ Points in the equatorial cross section, on a spherical coordinates grid. """
 
     def __init__(self, Nr, Ntheta, rICB=1.):
         SeismicData.__init__(self)
@@ -404,6 +406,7 @@ class Equator_upperpart(SeismicData):
 
 
 class PerfectSamplingSurface(SeismicData):
+    """ Perfect sampling at the surface of the sphere. """
 
     def __init__(self, N, depth=0., rICB=1.):
         """ Grid of points partitioned at the surface (or at given depth under surface)

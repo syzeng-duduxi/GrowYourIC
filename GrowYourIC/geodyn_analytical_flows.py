@@ -207,7 +207,7 @@ class Model_Yoshida96(Analytical_Model):
         pass
 
     def velocity(self, time, point):
-        """ Velocity at the given position and given time.
+        """ Velocity at the given position and given time (cartesian coord.).
 
         time: time (float)
         point: [x, y, z]
@@ -248,6 +248,9 @@ class Model_Yoshida96(Analytical_Model):
         a = self.radius_ic(time)
         return (-24. * (r / a) + 15. * (r / a)**3) * (np.cos(theta) * np.sin(theta)) / \
             10.  # derivative(p20_r, r, dx=1e-6)/r*derivative(self.Y20, theta, dx=1e-6)
+
+    def u_phi(self, r, theta, time):
+        return 0.
 
     def epsilon_rr(self, r, theta, phi, time):
         a = self.radius_ic(time)

@@ -6,6 +6,11 @@ if __name__ == "__main__":
 
     model = geodyn_analytical_flows.Model_Yoshida96()
     position = positions.CartesianPoint(20., 2., 0.)
-    track = tracers.Tracer(position, model, 3, 1e6, 5)
+    track = tracers.Tracer(position, model, 1e6, 5)
     print(track.traj_x, track.traj_y, track.traj_z)
-    print(track.velocity)
+    
+    track.spherical()
+    track.output(1)
+
+
+    tracers.Swarm(3, model)

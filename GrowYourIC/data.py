@@ -444,8 +444,8 @@ class PerfectSamplingCut(SeismicData):
         SeismicData.__init__(self)
         self.rICB = rICB
         self.N = N
-        self.name = "Perfect sampling in the equatorial plane"
-        self.shortname = "equatorial"
+        self.name = "Perfect sampling in the meridional pcross section"
+        self.shortname = "meridional"
         for x in np.linspace(-self.rICB, self.rICB, N):
             for z in np.linspace(-self.rICB, self.rICB, N):
                 ray = positions.Raypath()
@@ -502,7 +502,7 @@ class PerfectSamplingCut(SeismicData):
         cbar.set_label(nameproxy)
         title = "Geodynamical model: {}".format(modelgeodyn.name)
         plt.title(title)
-        plt.axis("off")
+        # plt.axis("off")
         # plt.show()
 
     def plot_c(self, modelgeodyn, proxy=1,

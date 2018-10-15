@@ -50,6 +50,73 @@ def e_z(r, theta, phi):
     return np.array([np.cos(theta), np.sin(theta), 0.])
 
 
+def A_ij(theta, phi):
+    """ Matrix for base change from spherical to cartesien:
+
+    V_X = A_ij * V_S,
+    where V_X is cartesian velocity, V_S spherical velocity (ordered as theta, phi, r)
+    """
+    A = np.array([[np.cos(theta) * np.cos(phi), -np.sin(phi), np.sin(theta)*np.cos(phi)],
+                [np.cos(theta)*np.sin(phi), np.cos(phi), np.sin(theta)*np.sin(phi)],
+                [-np.sin(theta), 0., np.cos(theta)]])
+    return A #np.concatenate((e_t, e_p, e_r), axis=1)
+
+def velocity_from_spher_to_cart(vel_spher, r, theta, phi):
+    """ Careful, velocity in spherical as [Vtheta, Vphi, Vr] """
+    sum_j = 0.
+    Aij = A_ij(theta, phi)
+    for j in range(3):
+        sum_j += Aij[:, j]* vel_spher[j]
+    return sum_j
+
+def inverse_Jacobien(r, theta, phi):
+    """ Matrix used for base change from spherical to cartesien. Notation J_mk """
+    return np.array([[ np.cos(theta)*np.cos(phi)/r, np.cos(theta)*np.sin(phi)/r, -np.sin(theta)/r],
+                     [ -np.sin(phi)/np.sin(theta)/r, np.cos(phi)/np.sin(theta)/r, 0.],
+                     [ np.sin(theta)*np.cos(phi), np.sin(theta)*np.sin(phi), np.cos(theta)]])
+
+def derivatives_A_ij(theta, phi):
+    """ Matrix used for base change from spherical to cartesien. Notation D_ijm """
+    D1 = np.array([[-np.sin(theta)*np.cos(phi), 0., np.cos(theta)*np.cos(phi)],
+                   [-np.sin(theta)*np.sin(phi), 0., np.cos(theta)*np.sin(phi)],
+                   [-np.cos(theta), 0., -np.sin(theta)]])
+    D2 = np.array([[-np.cos(theta)*np.sin(phi), -np.cos(phi), -np.sin(theta)*np.sin(phi)],
+                   [np.cos(theta)*np.cos(phi), -np.sin(phi), np.sin(theta)*np.cos(phi)],
+                   [0., 0., 0.]])
+    D3 = np.array([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
+    D = np.stack((D1, D2, D3), axis=2)
+    # print(D[0, 0, 0], D[0, 0, 2], D[0, 1, 1], D[0, 1, 2])
+    # print("D:  ", D.shape)
+    return D
+
+def velocity_gradient_spher_to_cart(V_spher, L_spher, r, theta, phi):
+    """  convert velocity gradient from spherical to cartesian coordinate systems.
+
+    L^X = \sum_i^3 (\sum_i^3 (V^S_j * D_{ijm} + A_{ij} * L^S_{jm}) J_{mk})
+    ^X: cartesian coordinates
+    ^S: spherical coordinates
+
+    V_spher as (np.array) [V_theta, V_phi, V_r]
+    L_spher as (np.array) [[dV_t/dt , dV_t/dp, dV_t/dr],
+                [dV_p/dt , dV_p/dp, dV_p/dr],
+                [dV_r/dt , dV_r/dp, dV_r/dr]
+    """
+    L_cart = np.zeros((3,3))
+    D_ijm = derivatives_A_ij(theta, phi)
+    A = A_ij(theta, phi)
+    J_mk =  inverse_Jacobien(r, theta, phi)
+    for i in range(3):
+        for k in range(3):
+            sum_m = 0
+            for m in range(3):
+                sum_j = 0.
+                for j in range(3):
+                    sum_j += V_spher[j] * D_ijm[i, j, m] + A[i, j] * L_spher[j, m]
+                sum_m += sum_j * J_mk[m, k]
+            L_cart[i, k] = sum_m
+    return L_cart
+
+
 class Analytical_Model(geodyn.Model):
 
     def proxy_singlepoint(self, point, proxy_type):
@@ -65,6 +132,8 @@ class Analytical_Model(geodyn.Model):
             proxy["age"] = (self.tau_ic - time)
             proxy["vMises_acc"] = self.deformation_accumulated(
                 point, time, self.tau_ic, 20)
+        elif proxy_type == "vMises_cart":
+            proxy["vMises_cart"] = self.deformation_from_cart(self.tau_ic, point)
         elif proxy_type == "age":
             time = self.crystallisation_time([x, y, z], self.tau_ic)
             proxy["age"] = (self.tau_ic - time)
@@ -192,7 +261,7 @@ class Analytical_Model(geodyn.Model):
                                   2 + epsilon_pp**2 + 2 * epsilon_rt**2))
 
 
-class Model_Yoshida96(Analytical_Model):
+class Yoshida96(Analytical_Model):
     """ Analytical model from Yoshida 1996 with preferential flow at the equator. """
 
     def __init__(self):
@@ -235,14 +304,20 @@ class Model_Yoshida96(Analytical_Model):
         u_phi = 0.  # self.u_phi(r, theta)
         velocity = u_r * e_r(r, theta, phi) + u_theta * \
             e_theta(r, theta, phi) + u_phi * e_phi(r, theta, phi)
-        velocity = velocity + self.u_t * \
-            np.array([1, 0, 0])  # with artificial translation
+
+        # TODO check if velocity is correctly calculated with this function:
+        #velocity_from_spher_to_cart(vel_spher, r, theta, phi)
+        # with artificial translation
+        # velocity = velocity + self.u_t * np.array([1, 0, 0])
         return velocity
 
     def u_r(self, r, theta, time):
         a = self.radius_ic(time)
-        return (8. * (r / a) - 3. * (r / a)**3) * (3. * np.cos(theta) *
-                                                   np.cos(theta) - 1.) / 10.  # 2.*3.*self.Y20(theta)*self.P20(r)/r
+        if r<1e-16:
+            return 0.
+        else:
+            return (8. * (r / a) - 3. * (r / a)**3) * (3. * np.cos(theta) *
+                                                   np.cos(theta) - 1.) / 10.
 
     def u_theta(self, r, theta, time):
         a = self.radius_ic(time)
@@ -289,8 +364,41 @@ class Model_Yoshida96(Analytical_Model):
             np.pi / 180., point.phi * np.pi / 180.
         return self.u_a(time) * self.vonMises_eq(r, theta, phi, time)
 
+    def gradient_spherical(self, r, theta, phi, time):
+        """ gradient of velocity in spherical coordinates
 
-class Model_LorentzForce(Analytical_Model):
+        (np.array) [[dV_t/dt , dV_t/dp, dV_t/dr],
+                   [dV_p/dt , dV_p/dp, dV_p/dr],
+                   [dV_r/dt , dV_r/dp, dV_r/dr]
+        """
+        a = 1. # self.radius_ic(time)
+        L_tt = (-24.*r/a + 15.*(r/a)**3) * (np.cos(theta)**2-np.sin(theta)**2)/10
+        L_tr = (-24./a + 45.*r**2/(a)**3) * np.cos(theta) * np.sin(theta)/10
+        L_rt = (8.*r/a - 3.*r**3/a**3) * (-6*np.cos(theta)*np.sin(theta))/10
+        L_rr = (8./a - 9.*r**2/(a)**3) * (3*np.cos(theta)**2-1.) /10
+        # TODO : missing prefactor with u_g and S2 ??
+        return np.array([[L_tt, 0., L_tr], [0., 0., 0.], [L_rt, 0., L_rr]])
+
+    def gradient_cartesian(self, r, theta, phi, time):
+        """ gradient of velocity in cartesian coordinates """
+        L_S = self.gradient_spherical(r, theta, phi, time)
+        V_S = [self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time) ]
+        return velocity_gradient_spher_to_cart(V_S, L_S, r, theta, phi)
+
+    def velocity_cartesian(self, r, theta, phi, time):
+        velocity_spher = [self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time)]
+        return velocity_from_spher_to_cart(velocity_spher, r, theta, phi)
+
+    def deformation_from_cart(self, time, point):
+        r, theta, phi = point.r, (90. - point.theta) * \
+            np.pi / 180., point.phi * np.pi / 180.
+        L_X = self.u_a(time) * self.gradient_cartesian(r, theta, phi, time)
+        epsilon = 0.5*(L_X+L_X.T)
+        return np.sqrt(2/3*np.sum(epsilon**2))
+
+
+
+class LorentzForce(Analytical_Model):
 
     def __init__(self):
         self.name = "Lorentz Force based on Karato 1986"

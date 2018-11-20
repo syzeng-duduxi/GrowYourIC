@@ -34,19 +34,18 @@ class Tracer():
             print(
                 "model.trajectory_single_point is required, please check the input model: {}".format(model))
         point = [initial_position.x, initial_position.y, initial_position.z]
-        self.crystallization_time = model.crystallisation_time(point, tau_ic)
+        self.crystallization_time = self.model.crystallisation_time(point, tau_ic)
         num_t = max(2, math.floor((tau_ic - self.crystallization_time) / dt))
-        # print(tau_ic, self.crystallization_time)
+        # print(tau_ic, self.crystallization_time, num_t)
         self.num_t = num_t
-        if num_t ==0: 
+        if num_t ==0:
             print("oups")
-
         # need to find cristallisation time of the particle
         # then calculate the number of steps, based on the required dt
         # then calculate the trajectory
         else:
             self.traj_x, self.traj_y, self.traj_z = self.model.trajectory_single_point(
-                self.initial_position, self.crystallization_time, tau_ic, num_t)
+                self.initial_position, tau_ic,  self.crystallization_time, num_t)
             self.time = np.linspace(tau_ic, self.crystallization_time, num_t)
             self.position = np.zeros((num_t, 3))
             self.velocity = np.zeros((num_t, 3))
@@ -69,7 +68,7 @@ class Tracer():
             point = positions.CartesianPoint(x, y, z)
             r, theta, phi = point.r, point.theta, point.phi
             x, y, z = point.x, point.y, point.z
-            vel = self.model.velocity_cartesian(r, theta, phi, time)
+            vel = self.model.velocity(time, [x, y, z]) # self.model.velocity_cartesian(r, theta, phi, time)
             grad = self.model.gradient_cartesian(r, theta, phi, time)
             self.position[index, :] = [x, y, z]
             self.velocity[index, :] = vel[:]
@@ -106,14 +105,15 @@ class Swarm():
     Include routines for writing outputs.
     """
 
-    def __init__(self, N, model, output="tracer"):
+    def __init__(self, N, model, dt, output="tracer"):
         self.model = model
         self.output = output
         self.rICB = self.model.rICB
         self.tau_ic = self.model.tau_ic
-      
-        N_x, N_y, N_z = 10, 10, 10
-        values_x = np.linspace(-self.model.rICB, self.model.rICB, N_x)
+        self.dt = dt
+        N_x, N_y, N_z = N, N, N
+        print("Number of tracers: {}".format(N_x*N_y*N_z))
+        values_x =   np.linspace(-self.model.rICB, self.model.rICB, N_x)
         values_y = np.linspace(-self.model.rICB, self.model.rICB, N_y)
         values_z = np.linspace(-self.model.rICB, self.model.rICB, N_z)
 
@@ -124,9 +124,10 @@ class Swarm():
 
                     if x**2+y**2+z**2 < self.model.rICB**2:
                         i += 1
-                        print(i, x, y, z)
                         position = positions.CartesianPoint(x, y, z)
                         self.one_tracer(position, i)
+                        if i%100 == 0:
+                            print("tracer n. {}".format(i))
 
         # # self.init_pos = np.zeros((N_t*N_r, 3))
         # for i, theta in enumerate(list_theta):
@@ -139,7 +140,7 @@ class Swarm():
         self.plot_meridional_cross_section()
 
     def one_tracer(self, position, i):
-        track = Tracer(position, self.model, self.tau_ic, 0.01)
+        track = Tracer(position, self.model, self.tau_ic, self.dt)
         # print(track.num_t, self.tau_ic)
         track.spherical()
         data = track.output_spher(i)
@@ -164,13 +165,11 @@ class Swarm():
         # ICB
         theta = np.linspace(0., 2 * np.pi, 1000)
         ax.plot(self.rICB*np.sin(theta), self.rICB*np.cos(theta), 'k', lw=3)
-
+        # data
         data = pd.read_csv(self.output+"_cart.csv", sep=" ")
-        ax.scatter(data["z"], data["x"], s=1, c=data["i"])
-
+        sc = ax.scatter(data["x"], data["z"], s=1, c=data["time"])
         # ax.plot(self.init_pos[:, 2], self.init_pos[:, 0], '.r')
-
-        ax.set_xlim([-1.1, 1.1])
-        ax.set_ylim([-1.1, 1.1])
-        
+        ax.set_xlim([-1.01*self.rICB, 1.01*self.rICB])
+        ax.set_ylim([-1.01*self.rICB, 1.01*self.rICB])
+        plt.colorbar(sc)
         plt.show()

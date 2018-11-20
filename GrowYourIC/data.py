@@ -485,7 +485,7 @@ class PerfectSamplingCut(SeismicData):
         for ix, _ in enumerate(x1):
             for iz, _ in enumerate(z1):
                 velocity = modelgeodyn.velocity(
-                    modelgeodyn.tau_ic, [X[ix, iz], 0., Z[ix, iz]])
+                    0.5*modelgeodyn.tau_ic, [X[ix, iz], 0., Z[ix, iz]])
                 Vx[ix, iz] = velocity[0]
                 Vz[ix, iz] = velocity[2]
         Vx = np.ma.array(Vx, mask=mask_Y)

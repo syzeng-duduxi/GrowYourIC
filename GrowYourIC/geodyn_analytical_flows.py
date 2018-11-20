@@ -22,7 +22,9 @@ from . import geodyn
 from . import mineral_phys
 
 
-def e_r(r, theta, phi):
+year = 3600*24*365.25
+
+def e_r(r, theta, phi): # in cartesian
     return np.array([np.sin(theta) * np.cos(phi),
                      np.sin(theta) * np.sin(phi), np.cos(theta)])
 
@@ -132,6 +134,8 @@ class Analytical_Model(geodyn.Model):
             proxy["age"] = (self.tau_ic - time)
             proxy["vMises_acc"] = self.deformation_accumulated(
                 point, time, self.tau_ic, 20)
+            if proxy["vMises_acc"]  > 10:
+                    proxy["vMises_acc"] = 10.
         elif proxy_type == "vMises_cart":
             proxy["vMises_cart"] = self.deformation_from_cart(self.tau_ic, point)
         elif proxy_type == "age":
@@ -140,20 +144,15 @@ class Analytical_Model(geodyn.Model):
         return proxy
 
     def radius_ic(self, t):
-        """ radius of the inner core with time.
-        """
+        """ radius of the inner core with time. """
         return self.rICB * (t / self.tau_ic)**self.alpha
 
     def u_growth(self, t):
         """ growth rate at a given time t (dimensional) """
-        if t < 0.01:
+        if t < 0.0001*self.tau_ic:
             return 0.
         return (t / self.tau_ic)**(self.alpha - 1) * \
             self.alpha * self.rICB / self.tau_ic
-
-    def u_a(self, t):
-        """ u_growth/r_icb """
-        return 1. / self.tau_ic  # TODO verify (not true for alpha != 0.5 )
 
     def crystallisation_time(self, point, tau_ic):
         """ Return the crystallisation time.
@@ -203,14 +202,16 @@ class Analytical_Model(geodyn.Model):
         r.set_initial_value(r0, t0)
         return np.real(r.integrate(r.t + (t1 - t0)))
 
-    def trajectory_single_point(self, point, t0, t1, num_t):
-        """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps.
+    def trajectory_single_point(self, cart_point, t0, t1, num_t):
+        """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, 
+
+        knowing that it was at the position.Point at t0, given nt times steps.
         """
         time = np.linspace(t0, t1, num_t)
         x, y, z = np.zeros(num_t), np.zeros(num_t), np.zeros(num_t)
-        x[0], y[0], z[0] = point.x, point.y, point.z
+        x[0], y[0], z[0] = cart_point.x, cart_point.y, cart_point.z
         for i, t in enumerate(time):
-            point = self.integration_trajectory(t, [x[0], y[0], z[0]], t0)
+            point = self.integration_trajectory(t, [cart_point.x, cart_point.y, cart_point.z], t0)
             x[i], y[i], z[i] = point[0], point[1], point[2]
         return x, y, z
 
@@ -252,7 +253,6 @@ class Analytical_Model(geodyn.Model):
         epsilon_pp = self.u_r(r,
                               theta) / r + self.u_theta(r,
                                                         theta) * np.cos(theta) / np.sin(theta) / r
-
         def vt_r(r, theta):
             return self.u_theta(r, theta) / r
         epsilon_rt = 0.5 * (r * partial_derivative(vt_r, 0,
@@ -264,13 +264,15 @@ class Analytical_Model(geodyn.Model):
 class Yoshida96(Analytical_Model):
     """ Analytical model from Yoshida 1996 with preferential flow at the equator. """
 
-    def __init__(self):
+    def __init__(self, vt=0.):
         self.name = "Yoshida model based on Yoshida et al. 1996"
         self.rICB = 1.
         self.alpha = 0.5
         self.S2 = 2. / 5.
         self.tau_ic = 1.
-        self.u_t = 0.  # 0.5e-3
+        self.u_t = vt  # 0.5e-3
+        if not vt == 0.:
+            self.name = "Yoshida model + translation"
 
     def verification(self):
         pass
@@ -288,41 +290,36 @@ class Yoshida96(Analytical_Model):
         if len(point) == 3 and isinstance(point, type(np.array([0, 0, 0]))):
             if point[0] == 0 and point[1] == 0 and point[2] == 0:
                 return [0., 0., 0.]
+                print("oups")
         Point_full_position = positions.CartesianPoint(
             point[0], point[1], point[2])
-        r, theta, phi = Point_full_position.r, (
-            90. - Point_full_position.theta) * np.pi / 180., Point_full_position.phi * np.pi / 180.
-        norm_u = self.u_growth(time)  # growth rate (average)
-        S2 = self.S2  # S2 coefficient, see Yoshida 1996 for definition
+        r, theta, phi = Point_full_position.r, \
+                        (90. - Point_full_position.theta) * np.pi / 180., \
+                        Point_full_position.phi * np.pi / 180.
+        if theta <0: print("oups")
+        norm_u = self.u_growth(time) * self.S2  # growth rate (average)
+        # S2 = self.S2  # S2 coefficient, see Yoshida 1996 for definition
         # radius of inner core. Has to be set to 1 if r is already
         # non-dimensional.
-        a = self.rICB
-        # (8.*(r/a)-3.*(r/a)**3) * (3.*np.cos(theta)*np.cos(theta)-1.)/10.
-        u_r = norm_u * S2 * self.u_r(r, theta, time)
-        # (-24.*(r/a) + 15. *(r/a)**3) * (np.cos(theta)*np.sin(theta))/10.
-        u_theta = norm_u * S2 * self.u_theta(r, theta, time)
-        u_phi = 0.  # self.u_phi(r, theta)
+        a = self.radius_ic(time)
+        u_r = norm_u * self.u_r(r, theta, time)
+        u_theta = norm_u * self.u_theta(r, theta, time)
+        u_phi = norm_u * self.u_phi(r, theta, time)
         velocity = u_r * e_r(r, theta, phi) + u_theta * \
             e_theta(r, theta, phi) + u_phi * e_phi(r, theta, phi)
-
-        # TODO check if velocity is correctly calculated with this function:
-        #velocity_from_spher_to_cart(vel_spher, r, theta, phi)
         # with artificial translation
-        # velocity = velocity + self.u_t * np.array([1, 0, 0])
+        velocity = velocity #+ self.u_t * np.array([1, 0, 0])
         return velocity
 
     def u_r(self, r, theta, time):
         a = self.radius_ic(time)
-        if r<1e-16:
-            return 0.
-        else:
-            return (8. * (r / a) - 3. * (r / a)**3) * (3. * np.cos(theta) *
+        return (8. * (r / a) - 3. * (r / a)**3) * (3. * np.cos(theta) *
                                                    np.cos(theta) - 1.) / 10.
 
     def u_theta(self, r, theta, time):
         a = self.radius_ic(time)
         return (-24. * (r / a) + 15. * (r / a)**3) * (np.cos(theta) * np.sin(theta)) / \
-            10.  # derivative(p20_r, r, dx=1e-6)/r*derivative(self.Y20, theta, dx=1e-6)
+            10.
 
     def u_phi(self, r, theta, time):
         return 0.
@@ -359,10 +356,10 @@ class Yoshida96(Analytical_Model):
             + 2 * self.epsilon_tp(r, theta, phi, time)**2
         return np.sqrt(2 / 3 * sum)
 
-    def deformation(self, time, point):
+    def deformation_old(self, time, point):
         r, theta, phi = point.r, (90. - point.theta) * \
             np.pi / 180., point.phi * np.pi / 180.
-        return self.u_a(time) * self.vonMises_eq(r, theta, phi, time)
+        return  self.vonMises_eq(r, theta, phi, time)
 
     def gradient_spherical(self, r, theta, phi, time):
         """ gradient of velocity in spherical coordinates
@@ -371,28 +368,31 @@ class Yoshida96(Analytical_Model):
                    [dV_p/dt , dV_p/dp, dV_p/dr],
                    [dV_r/dt , dV_r/dp, dV_r/dr]
         """
-        a = 1. # self.radius_ic(time)
+        norm_u = self.u_growth(time)*self.S2   # growth rate (average)
+        # S2 coefficient, see Yoshida 1996 for definition
+        # radius of inner core. Has to be set to 1 if r is already
+        # non-dimensional.
+        a = self.radius_ic(time)
         L_tt = (-24.*r/a + 15.*(r/a)**3) * (np.cos(theta)**2-np.sin(theta)**2)/10
         L_tr = (-24./a + 45.*r**2/(a)**3) * np.cos(theta) * np.sin(theta)/10
         L_rt = (8.*r/a - 3.*r**3/a**3) * (-6*np.cos(theta)*np.sin(theta))/10
         L_rr = (8./a - 9.*r**2/(a)**3) * (3*np.cos(theta)**2-1.) /10
-        # TODO : missing prefactor with u_g and S2 ??
-        return np.array([[L_tt, 0., L_tr], [0., 0., 0.], [L_rt, 0., L_rr]])
+        return norm_u  * np.array([[L_tt, 0., L_tr], [0., 0., 0.], [L_rt, 0., L_rr]])
 
     def gradient_cartesian(self, r, theta, phi, time):
         """ gradient of velocity in cartesian coordinates """
         L_S = self.gradient_spherical(r, theta, phi, time)
-        V_S = [self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time) ]
+        V_S = self.S2 * self.u_growth(time)  * np.array([self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time) ])
         return velocity_gradient_spher_to_cart(V_S, L_S, r, theta, phi)
 
-    def velocity_cartesian(self, r, theta, phi, time):
-        velocity_spher = [self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time)]
-        return velocity_from_spher_to_cart(velocity_spher, r, theta, phi)
+    #def velocity_cartesian(self, r, theta, phi, time):
+    #    velocity_spher = [self.u_theta(r, theta, time), self.u_phi(r, theta, time), self.u_r(r, theta, time)]
+    #    return velocity_from_spher_to_cart(velocity_spher, r, theta, phi)
 
-    def deformation_from_cart(self, time, point):
+    def deformation(self, time, point):
         r, theta, phi = point.r, (90. - point.theta) * \
             np.pi / 180., point.phi * np.pi / 180.
-        L_X = self.u_a(time) * self.gradient_cartesian(r, theta, phi, time)
+        L_X = self.gradient_cartesian(r, theta, phi, time)
         epsilon = 0.5*(L_X+L_X.T)
         return np.sqrt(2/3*np.sum(epsilon**2))
 
@@ -498,7 +498,6 @@ def partial_derivative(func, var=0, point=[]):
     var indicates which derivative to use: 0 for first argument, 1 for second, etc.
     """
     args = point[:]
-
     def wraps(x):
         args[var] = x
         return func(*args)

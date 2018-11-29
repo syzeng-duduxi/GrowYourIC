@@ -308,7 +308,7 @@ class Yoshida96(Analytical_Model):
         velocity = u_r * e_r(r, theta, phi) + u_theta * \
             e_theta(r, theta, phi) + u_phi * e_phi(r, theta, phi)
         # with artificial translation
-        velocity = velocity #+ self.u_t * np.array([1, 0, 0])
+        velocity = velocity + self.u_t * np.array([1, 0, 0])
         return velocity
 
     def u_r(self, r, theta, time):

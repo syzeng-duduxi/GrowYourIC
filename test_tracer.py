@@ -7,4 +7,4 @@ if __name__ == "__main__":
 
 
     model = geodyn_analytical_flows.Yoshida96(0.)
-    tracers.Swarm(20, model, model.tau_ic/200)
+    tracers.Swarm(30, model, model.tau_ic/200)

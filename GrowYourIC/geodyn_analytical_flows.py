@@ -141,6 +141,12 @@ class Analytical_Model(geodyn.Model):
         elif proxy_type == "age":
             time = self.crystallisation_time([x, y, z], self.tau_ic)
             proxy["age"] = (self.tau_ic - time)
+        elif proxy_type == "growth rate":
+            time = self.crystallisation_time([x, y, z], self.tau_ic)
+            position_crys = self.crystallisation_position([x, y, z], time)
+            # in m/years. growth rate at the time of the crystallization.
+            proxy["growth rate"] = self.effective_growth_rate(
+                time, position_crys)
         return proxy
 
     def radius_ic(self, t):
@@ -169,6 +175,21 @@ class Analytical_Model(geodyn.Model):
         else:
             tau_2 = 1.01 * tau_ic
         return self.find_time_beforex0(point, tau_ic, tau_2)
+
+    def crystallisation_position(self, point, time):
+        """ Return the crystallisation position.
+
+        The cristallisation time of a particle in the inner core is defined as
+        the intersection between the trajectory and the radius of the inner core.
+        This function return the position of the particle at this time.
+
+        Args:
+            point: [x, y, z]
+            time: calulated from crystallisation_time
+        Return: time
+        """
+        _point = self.integration_trajectory(time, point, self.tau_ic)
+        return positions.CartesianPoint(_point[0], _point[1], _point[2])
 
     def find_time_beforex0(self, point, t0, t1):
         """ find the intersection between the trajectory and the radius of the IC
@@ -260,6 +281,21 @@ class Analytical_Model(geodyn.Model):
         return np.sqrt(2. / 3. * (epsilon_rr**2 + epsilon_tt **
                                   2 + epsilon_pp**2 + 2 * epsilon_rt**2))
 
+    def effective_growth_rate(self, t, point):
+        """ Effective growth rate at the point r.
+
+        v_{g_eff} = || v_growth - v_geodynamic*e_r ||
+        v_geodynamic is already in cartesian coordinates.
+        v_growth = ||v_growth|| * vec{e}_r (the unit vector for the radial direction)
+        point.er() gives the cartesian coordinates of the vector e_r
+        point.proj_er(vect) gives the value of the vector projected on the vector e_r
+        r is the position, described as x,y,z
+        This function is used for points that are at the surface: r(t) is a point at the surface of the inner core at the time t.
+        """
+        r = np.array([point.x, point.y, point.z])
+        vitesse = point.proj_er(self.velocity(t, r))  # projected on e_r
+        growth = self.u_growth(t) - vitesse
+        return growth
 
 class Yoshida96(Analytical_Model):
     """ Analytical model from Yoshida 1996 with preferential flow at the equator. """

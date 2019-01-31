@@ -111,10 +111,10 @@ class Swarm():
         self.rICB = self.model.rICB
         self.tau_ic = self.model.tau_ic
         self.dt = dt
-        N_x, N_y, N_z = N, N, N
+        N_x, N_y, N_z = N, 1, N
         print("Number of tracers: {}".format(N_x*N_y*N_z))
         values_x =   np.linspace(-self.model.rICB, self.model.rICB, N_x)
-        values_y = np.linspace(-self.model.rICB, self.model.rICB, N_y)
+        values_y = [0]#np.linspace(-self.model.rICB, self.model.rICB, N_y)
         values_z = np.linspace(-self.model.rICB, self.model.rICB, N_z)
 
         i = 0
@@ -172,4 +172,5 @@ class Swarm():
         ax.set_xlim([-1.01*self.rICB, 1.01*self.rICB])
         ax.set_ylim([-1.01*self.rICB, 1.01*self.rICB])
         plt.colorbar(sc)
+        plt.savefig(self.output+"_trajectory.pdf")
         plt.show()

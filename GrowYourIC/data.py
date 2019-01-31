@@ -387,7 +387,7 @@ class Equator_upperpart(SeismicData):
         self.name = "Meshgrid at the equator between 0 and 120km depth"
         self.shortname = "meshgrid"
         self.depth = [d0 / 1221., d1 / 1221.]
-        self.theta = 0.  # at the equator
+        self.theta = 0. # at the equator
         for depth in np.linspace(self.depth[0], self.depth[1], Nr):
             for phi in np.linspace(-180., 180., Np):
                 ray = positions.Raypath()
@@ -403,6 +403,50 @@ class Equator_upperpart(SeismicData):
         PHI = p.reshape(-1, self.Np)
         PROXY = proxy.reshape(-1, self.Np)
         return R, PHI, PROXY
+
+
+
+class Equator_upperpart_latitude(SeismicData):
+    """ meshgrid for the uppermost part of IC (2-120km), at the equator."""
+
+    def __init__(self, Nr, Np, latitude=0., rICB=1., d0=2., d1=120.):
+        SeismicData.__init__(self)
+        self.rICB = rICB
+        self.N = Nr * Np
+        self.Np = Np
+        self.Nr = Nr
+        self.name = "Meshgrid at the latitude {} between 0 and 120km depth".format(latitude)
+        self.shortname = "meshgrid"
+        self.depth = [d0 / 1221., d1 / 1221.]
+        self.theta = latitude  # at the equator
+        colatitude_icb = np.pi*(90. - latitude)/180.
+        h_cylindrical = self.rICB * np.cos(colatitude_icb)
+        r_cyl_max = self.rICB * np.sin(colatitude_icb)
+        print(h_cylindrical)
+        for depth in np.linspace(self.depth[0], self.depth[1], Nr):
+            for phi in np.linspace(-180., 180., Np):
+                ray = positions.Raypath()
+                r_cylindrical = r_cyl_max - depth
+                # phi_cylindrical = phi
+                r_spherical = np.sqrt(h_cylindrical**2 + r_cylindrical**2)
+                print(r_cylindrical, r_spherical)
+                colatitude_point = 180./np.pi * np.arctan(r_cylindrical/ h_cylindrical)
+                print(colatitude_point)
+                point = positions.SeismoPoint(r_spherical, 90. - colatitude_point , phi)
+                ray.add_b_t_point(point)
+                self.data_points = np.append(self.data_points, ray)
+        self.size = len(self.data_points)
+
+    def mesh_RPProxy(self, proxy):
+        r, t, p = self.extract_rtp("bottom_turning_point")
+        #depth = (self.rICB - r)*self.rICB
+        R_spherical = r.reshape(-1, self.Np)
+        THETA = t.reshape(-1, self.Np)
+        R_cylindrical = R_spherical * np.sin((90. - THETA)*np.pi/180.)
+        PHI = p.reshape(-1, self.Np)
+        PROXY = proxy.reshape(-1, self.Np)
+        return R_cylindrical, PHI, PROXY
+
 
 
 class PerfectSamplingSurface(SeismicData):

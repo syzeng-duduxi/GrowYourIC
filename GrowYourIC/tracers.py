@@ -111,10 +111,10 @@ class Swarm():
         self.rICB = self.model.rICB
         self.tau_ic = self.model.tau_ic
         self.dt = dt
-        N_x, N_y, N_z = N, 1, N
+        N_x, N_y, N_z = N, N, N
         print("Number of tracers: {}".format(N_x*N_y*N_z))
         values_x =   np.linspace(-self.model.rICB, self.model.rICB, N_x)
-        values_y = [0]#np.linspace(-self.model.rICB, self.model.rICB, N_y)
+        values_y = np.linspace(-self.model.rICB, self.model.rICB, N_y)
         values_z = np.linspace(-self.model.rICB, self.model.rICB, N_z)
 
         i = 0
@@ -142,13 +142,13 @@ class Swarm():
     def one_tracer(self, position, i):
         track = Tracer(position, self.model, self.tau_ic, self.dt)
         # print(track.num_t, self.tau_ic)
-        track.spherical()
-        data = track.output_spher(i)
-        if i == 1:
-            data.to_csv(self.output+"_spher.csv", sep=" ", index=False)
-        else:
-            with open(self.output+"_spher.csv", 'a') as f:
-                data.to_csv(f, sep=" ", header=False, index=False)
+        #track.spherical()
+        #data = track.output_spher(i)
+        #if i == 1:
+        #    data.to_csv(self.output+"_spher.csv", sep=" ", index=False)
+        #else:
+        #    with open(self.output+"_spher.csv", 'a') as f:
+        #        data.to_csv(f, sep=" ", header=False, index=False)
         track.cartesian()
         data = track.output_cart(i+1)
         if i == 1:
@@ -173,4 +173,4 @@ class Swarm():
         ax.set_ylim([-1.01*self.rICB, 1.01*self.rICB])
         plt.colorbar(sc)
         plt.savefig(self.output+"_trajectory.pdf")
-        plt.show()
+        #plt.show()

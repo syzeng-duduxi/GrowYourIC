@@ -6,7 +6,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
-from mpl_toolkits.basemap import Basemap  # to render maps
+# from mpl_toolkits.basemap import Basemap  # to render maps
 
 # personal routines
 from . import positions

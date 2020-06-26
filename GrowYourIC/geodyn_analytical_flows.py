@@ -9,7 +9,7 @@ from __future__ import absolute_import
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
-from mpl_toolkits.basemap import Basemap  # to render maps
+# from mpl_toolkits.basemap import Basemap  # to render maps
 import math
 from scipy.integrate import ode
 from scipy.optimize import fsolve
@@ -132,10 +132,12 @@ class Analytical_Model(geodyn.Model):
         elif proxy_type == "vMises_acc":
             time = self.crystallisation_time([x, y, z], self.tau_ic)
             proxy["age"] = (self.tau_ic - time)
-            proxy["vMises_acc"] = self.deformation_accumulated(
+            vMises_acc = self.deformation_accumulated(
                 point, time, self.tau_ic, 20)
+            proxy["vMises_acc"] = vMises_acc
+            #proxy["log_vMises_acc"] = np.log10(vMises_acc)
             if proxy["vMises_acc"]  > 10:
-                    proxy["vMises_acc"] = 10.
+                    pass # proxy["vMises_acc"] = 10.
         elif proxy_type == "vMises_cart":
             proxy["vMises_cart"] = self.deformation_from_cart(self.tau_ic, point)
         elif proxy_type == "age":
@@ -300,11 +302,11 @@ class Analytical_Model(geodyn.Model):
 class Yoshida96(Analytical_Model):
     """ Analytical model from Yoshida 1996 with preferential flow at the equator. """
 
-    def __init__(self, vt=0.):
+    def __init__(self, vt=0., S=2./5.):
         self.name = "Yoshida model based on Yoshida et al. 1996"
         self.rICB = 1.
         self.alpha = 0.5
-        self.S2 = 2. / 5.
+        self.S2 = S
         self.tau_ic = 1.
         self.u_t = vt  # 0.5e-3
         if not vt == 0.:

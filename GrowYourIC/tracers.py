@@ -105,18 +105,25 @@ class Swarm():
     Include routines for writing outputs.
     """
 
-    def __init__(self, N, model, dt, output="tracer"):
+    def __init__(self, N, model, dt, output="tracer", plane="all"):
         self.model = model
         self.output = output
         self.rICB = self.model.rICB
         self.tau_ic = self.model.tau_ic
         self.dt = dt
         N_x, N_y, N_z = N, N, N
-        print("Number of tracers: {}".format(N_x*N_y*N_z))
         values_x =   np.linspace(-self.model.rICB, self.model.rICB, N_x)
         values_y = np.linspace(-self.model.rICB, self.model.rICB, N_y)
         values_z = np.linspace(-self.model.rICB, self.model.rICB, N_z)
+        if plane == "equator":
+            N_z = 1
+            values_z = np.array([0])
+        elif plane == "meridional":
+            N_y = 1
+            values_y = np.array([0])
+        print("Number of tracers: {}".format(N_x*N_y*N_z))
 
+            
         i = 0
         for ix, x in enumerate(values_x):
             for iy, y in enumerate(values_y):
@@ -126,7 +133,7 @@ class Swarm():
                         i += 1
                         position = positions.CartesianPoint(x, y, z)
                         self.one_tracer(position, i)
-                        if i%100 == 0:
+                        if i%10 == 0:
                             print("tracer n. {}".format(i))
 
         # # self.init_pos = np.zeros((N_t*N_r, 3))

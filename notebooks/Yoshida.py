@@ -11,53 +11,30 @@ from GrowYourIC import tracers, positions, geodyn, geodyn_trg, geodyn_static, pl
 #plt.rcParams['figure.figsize'] = (8.0, 3.0) #size of figures
 cm = plt.cm.get_cmap('viridis_r')
 
-V = 0. # translation velocity
-S2 = -1
+#V = 0.2 # translation velocity
+#S2 = 1/5.
 
-Yoshida = geodyn_analytical_flows.Yoshida96(V, S=S2)
-file = "Fig/Yoshida_{}_S2_{}".format(V, S2)
-print(file)
+#Yoshida = geodyn_analytical_flows.Yoshida96(V, S=S2)
+#file = "Fig/Yoshida_{}_S2_{}".format(V, S2)
+#print(file)
 
-npoints = 50 #number of points in the x direction for the data set. 
-data_set = data.PerfectSamplingCut(npoints, rICB = 1.)
-data_set.method = "bt_point"
+V = [0.2, 0.4]
+S2 = [1/5., 4/5., 2.]
+    
+for vitesse in V:
+    for value_S in S2: 
+        Yoshida = geodyn_analytical_flows.Yoshida96(vitesse, S=value_S)
+        file = "Fig/Yoshida_{}_S2_{}".format(vitesse, value_S)
+        print(file)
 
-# Age plot with velocity field
-proxy = geodyn.evaluate_proxy(data_set, Yoshida, proxy_type="age", verbose = False)
-data_set.plot_c_vec(Yoshida, proxy=proxy, nameproxy="age")
-plt.savefig(file+"_age.pdf")
+        npoints = 50 #number of points in the x direction for the data set. 
+        data_set = data.PerfectSamplingCut(npoints, rICB = 1.)
+        data_set.method = "bt_point"
 
-
-S2 = 1.
-Yoshida = geodyn_analytical_flows.Yoshida96(V, S=S2)
-file = "Fig/Yoshida_{}_S2_{}".format(V, S2)
-print(file)
-
-# Age plot with velocity field
-proxy = geodyn.evaluate_proxy(data_set, Yoshida, proxy_type="age", verbose = False)
-data_set.plot_c_vec(Yoshida, proxy=proxy, nameproxy="age")
-plt.savefig(file+"_age.pdf")
-
-S2 = 2.
-Yoshida = geodyn_analytical_flows.Yoshida96(V, S=S2)
-file = "Fig/Yoshida_{}_S2_{}".format(V, S2)
-print(file)
-
-
-# Age plot with velocity field
-proxy = geodyn.evaluate_proxy(data_set, Yoshida, proxy_type="age", verbose = False)
-data_set.plot_c_vec(Yoshida, proxy=proxy, nameproxy="age")
-plt.savefig(file+"_age.pdf")
-
-S2 = 3.
-Yoshida = geodyn_analytical_flows.Yoshida96(V, S=S2)
-file = "Fig/Yoshida_{}_S2_{}".format(V, S2)
-print(file)
-
-# Age plot with velocity field
-proxy = geodyn.evaluate_proxy(data_set, Yoshida, proxy_type="age", verbose = False)
-data_set.plot_c_vec(Yoshida, proxy=proxy, nameproxy="age")
-plt.savefig(file+"_age.pdf")
+        # Age plot with velocity field
+        proxy = geodyn.evaluate_proxy(data_set, Yoshida, proxy_type="age", verbose = False)
+        data_set.plot_c_vec(Yoshida, proxy=proxy, nameproxy="age")
+        plt.savefig(file+"_age.pdf")
 
 
 # accumulated deformation

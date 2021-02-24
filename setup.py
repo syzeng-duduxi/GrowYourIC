@@ -31,7 +31,7 @@ metadata = dict(name="GrowYourIC",
                 package_dir={'GrowYourIC': 'GrowYourIC'},
                 package_data={'GrowYourIC': ['data/*.dat', 'data/*.mat']},
                 classifiers=[
-                    'Programming Language :: Python :: 3.4'],
+                    'Programming Language :: Python :: 3.6'],
                 author='Marine Lasbleis',
                 author_email='marine.lasleis@elsi.jp',
                )

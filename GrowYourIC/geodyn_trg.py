@@ -1,7 +1,7 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
-
+""" Define classes for geodynnamical models combining growth, translation and rotation. """
 
 from __future__ import division
 from __future__ import absolute_import
@@ -9,7 +9,6 @@ from __future__ import absolute_import
 
 import numpy as np
 import matplotlib.pyplot as plt  # for figures
-from mpl_toolkits.basemap import Basemap  # to render maps
 import math
 from scipy.integrate import ode
 from scipy.optimize import fsolve
@@ -41,9 +40,9 @@ class ModelTRG(geodyn.Model):
         pass
 
     def velocity(self, t, position):
-        """ Velocity at the given position and given time. 
+        """ Velocity at the given position and given time.
 
-            Need to be implemented in derived classes. 
+            Need to be implemented in derived classes.
             Needed in cartesian coordinates.
 
             Example :
@@ -59,7 +58,7 @@ class ModelTRG(geodyn.Model):
             "need to implement velocity() in derived class!")
 
     def radius_ic(self, t):
-        """ radius of the inner core with time. 
+        """ radius of the inner core with time.
 
             Need to be implemented in derived classes.
             """
@@ -67,7 +66,7 @@ class ModelTRG(geodyn.Model):
             "need to implement radius_ic() in derived class!")
 
     def growth_ic(self, t):
-        """ growth rate of the inner core with time. 
+        """ growth rate of the inner core with time.
 
             Need to be implemented in derived classes.
             """
@@ -78,7 +77,7 @@ class ModelTRG(geodyn.Model):
         """ Effective growth rate at the point r.
 
         v_{g_eff} = || v_growth - v_geodynamic*e_r ||
-        v_geodynamic is already in cartesian coordinates. 
+        v_geodynamic is already in cartesian coordinates.
         v_growth = ||v_growth|| * vec{e}_r (the unit vector for the radial direction)
         point.er() gives the cartesian coordinates of the vector e_r
         point.proj_er(vect) gives the value of the vector projected on the vector e_r
@@ -86,9 +85,9 @@ class ModelTRG(geodyn.Model):
         This function is used for points that are at the surface: r(t) is a point at the surface of the inner core at the time t.
         """
         r = np.array([point.x, point.y, point.z])
-        vitesse = point.proj_er(self.velocity(t,r)) #projected on e_r
-        growth = self.growth_ic(t) - vitesse 
-        return growth 
+        vitesse = point.proj_er(self.velocity(t, r))  # projected on e_r
+        growth = self.growth_ic(t) - vitesse
+        return growth
 
     def effective_growth_rate2(self, t, point):
         """ Effective growth rate at the point r defined by the radial derivative of the field age
@@ -98,7 +97,7 @@ class ModelTRG(geodyn.Model):
         Args:
             t: time
             point: position (Point instance)
-        Return: 
+        Return:
             scalar
         """
         r = np.array([point.x, point.y, point.z])
@@ -108,7 +107,7 @@ class ModelTRG(geodyn.Model):
         # Avoid having too large growth rates.
         if abs(dadr) < 1.e-2:
             message = "Age growth may be divergent. Value of da/dr = {}, modified for {}, corresponding to age growth of {} m/years".format(
-                dadr,  np.sign(dadr) * 1.e-2, 1e2 * self.length_unit / self.time_unit)
+                dadr, np.sign(dadr) * 1.e-2, 1e2 * self.length_unit / self.time_unit)
             warnings.warn(message)
             dadr = np.sign(dadr) * 1.e-2
         return 1. / (dadr * self.time_unit / self.length_unit)
@@ -119,22 +118,23 @@ class ModelTRG(geodyn.Model):
 
         point : [x, y, z]
         """
-        return intersection.zero_brentq(self.distance_to_radius, point, t0, a=0., b=t1)
+        return intersection.zero_brentq(
+            self.distance_to_radius, point, t0, a=0., b=t1)
 
     def proxy_singlepoint(self, point, proxy_type):
-        """ evaluate the proxy on a single positions.Point instance."""
+        """ evaluate the proxy on a single positions.Point instance.
+
+        return a dictionnary {}
+        """
         proxy = {}  # empty dictionnary
-
         x, y, z = point.x, point.y, point.z
-
-        if proxy_type == "hemispheres":  #be careful, it's the hemisphere at the time t_end (not at time of freezing)
+        # be careful, it's the hemisphere at the time t_end (not at time of
+        # freezing)
+        if proxy_type == "hemispheres":
             proxy["hemispheres"] = self.hemispheres(point)
-            return proxy  # no calculation of time, etc. 
-
-
+            return proxy  # no calculation of time, etc.
         time = self.crystallisation_time([x, y, z], self.tau_ic)
-        position_crys = self.crystallisation_position([x,y,z], time)
-
+        position_crys = self.crystallisation_position([x, y, z], time)
         # calculate the proxy needed (proxy_type value)
         if proxy_type == "age":
             proxy["age"] = (self.tau_ic - time) * 1e-6 * \
@@ -150,7 +150,9 @@ class ModelTRG(geodyn.Model):
             proxy["phi"] = proxy["position"].phi
             proxy["theta"] = proxy["position"].theta
         elif proxy_type == "growth rate":
-            proxy["growth rate"] = self.effective_growth_rate(time, position_crys) #in m/years. growth rate at the time of the crystallization.
+            # in m/years. growth rate at the time of the crystallization.
+            proxy["growth rate"] = self.effective_growth_rate(
+                time, position_crys)
         else:
             print("unknown value for proxy_type.")
             proxy = 0.
@@ -175,7 +177,7 @@ class ModelTRG(geodyn.Model):
     def crystallisation_position(self, point, time):
         """ Return the crystallisation position.
 
-        The cristallisation time of a particle in the inner core is defined as 
+        The cristallisation time of a particle in the inner core is defined as
         the intersection between the trajectory and the radius of the inner core.
         This function return the position of the particle at this time.
 
@@ -213,7 +215,7 @@ class ModelTRG(geodyn.Model):
         return np.real(r.integrate(r.t + (t1 - t0)))
 
     def trajectory_single_point(self, point, t0, t1, num_t):
-        """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps. 
+        """ return the trajectory of a point (a positions.Point instance) between the times t0 and t1, knowing that it was at the position.Point at t0, given nt times steps.
         """
         time = np.linspace(t0, t1, num_t)
         x, y, z = np.zeros(num_t), np.zeros(num_t), np.zeros(num_t)
@@ -233,7 +235,7 @@ class ModelTRG(geodyn.Model):
         polynome = mineral_phys.export_matlab_data("Belanoshko_Vp_poly")
         return mineral_phys.convert_CM2008_velocity(adimfrequency, polynome)
 
-    def plot_equatorial(self, t0, t1, Nt=200,  N=40):
+    def plot_equatorial(self, t0, t1, Nt=200, N=40):
         # Plot the inner core boundary
         phi = np.linspace(0., 2 * np.pi, N)
         x, y = self.rICB * np.cos(phi), self.rICB * np.sin(phi)
@@ -250,9 +252,8 @@ class ModelTRG(geodyn.Model):
             plt.quiver(mx[::10], my[::10], np.ma.masked_array(velocity[0], mask=trajectory_r >= self.rICB)[
                        ::10], np.ma.masked_array(velocity[1], mask=trajectory_r >= self.rICB)[::10], units='width')
         plt.axis("equal")
-        plt.xlim([-1, 1])
+        plt.xlim([-1, 1])  # should be -rICB, +rICB
         plt.ylim([-1, 1])
-        # plt.show()
 
     def translation_velocity(self):
         try:
@@ -269,14 +270,15 @@ class ModelTRG(geodyn.Model):
         vx, vy, vz = self.translation_velocity()
         phi = point.phi / 180. * np.pi
         theta = (90. - point.theta) * np.pi / 180.
-        return np.sign(np.sin(theta)*np.cos(phi)*vx+ np.sin(theta)*np.sin(phi)*vy+ np.cos(theta)*vz)
-        
+        return np.sign(np.sin(theta) * np.cos(phi) * vx +
+                       np.sin(theta) * np.sin(phi) * vy + np.cos(theta) * vz)
 
     def rotation_velocity(self, r):
         try:
             self.omega
         except (NameError, AttributeError):
-            print("Rotation velocity has not been defined. Please enter the value for omega: ")
+            print(
+                "Rotation velocity has not been defined. Please enter the value for omega: ")
             value = float(input("Rotation rate: "))
             self.set_rotation(value)
         return np.array([-self.omega * r[1], self.omega * r[0], 0.])
@@ -306,13 +308,15 @@ class PureTranslation(ModelTRG):
         """ For pure translation, velocity has to be > 2*ricb/t_ic """
         v = np.sqrt(self.vt[0]**2 + self.vt[1]**2 + self.vt[2]**2)
         if v <= 2. * self.rICB / self.tau_ic:
-            raise ValueError("For pure translation, velocity has to be > 2*ricb/t_ic.")
+            raise ValueError(
+                "For pure translation, velocity has to be > 2*ricb/t_ic.")
         try:
             self.rICB
             self.tau_ic
             self.vt
         except NameError:
-            raise NameError("please verify the number of parameters.PureTranslation requires: rICB, rau_ic and vt.")
+            raise NameError(
+                "please verify the number of parameters.PureTranslation requires: rICB, rau_ic and vt.")
 
 
 class TranslationRotation(ModelTRG):
@@ -323,7 +327,7 @@ class TranslationRotation(ModelTRG):
     def velocity(self, t, r):
         """ velocity at the point position
 
-        position is a np.array [x, y, z] 
+        position is a np.array [x, y, z]
         """
         return self.translation_velocity() + self.rotation_velocity(r)
 
@@ -334,14 +338,16 @@ class TranslationRotation(ModelTRG):
         """ For translation, velocity has to be (at least) > 2*ricb/t_ic. Please note that with rotation, it may need an even higher velocity. """
         v = np.sqrt(self.vt[0]**2 + self.vt[1]**2 + self.vt[2]**2)
         if v <= 2. * self.rICB / self.tau_ic:
-            raise ValueError("For translation, velocity has to be (at least) > 2*ricb/t_ic.")
+            raise ValueError(
+                "For translation, velocity has to be (at least) > 2*ricb/t_ic.")
         try:
             self.rICB
             self.tau_ic
             self.vt
             self.omega
         except NameError:
-            raise NameError("please verify the number of parameters. TranslationRotation requires: rICB, tau_ic, vt, omega.")
+            raise NameError(
+                "please verify the number of parameters. TranslationRotation requires: rICB, tau_ic, vt, omega.")
 
 
 class PureRotation(ModelTRG):
@@ -352,7 +358,7 @@ class PureRotation(ModelTRG):
     def velocity(self, t, r):
         """ velocity at the point position
 
-        position is a np.array [x, y, z] 
+        position is a np.array [x, y, z]
         """
 
         return self.rotation_velocity()
@@ -360,13 +366,15 @@ class PureRotation(ModelTRG):
     def verification(self):
         """ pure rotation cannot give age values because the streamlines do not cross the inner core boundary."""
         if proxy_type == 'age':
-            raise ValueError("pure rotation cannot give age values because the streamlines do not cross the     inner core boundary.")
+            raise ValueError(
+                "pure rotation cannot give age values because the streamlines do not cross the     inner core boundary.")
         try:
             self.rICB
             self.tau_ic
             self.omega
         except NameError:
-            raise NameError("please verify the number of parameters. PureRotation requires: rICB, tau_ic, omega.")
+            raise NameError(
+                "please verify the number of parameters. PureRotation requires: rICB, tau_ic, omega.")
 
 
 class PureGrowth(ModelTRG):
@@ -387,7 +395,8 @@ class PureGrowth(ModelTRG):
             self.tau_ic
             self.exponent_growth
         except NameError:
-            raise NameError("please verify the number of parameters. PureGrowth requires: rICB, tau_ic, exponent_growth.")
+            raise NameError(
+                "please verify the number of parameters. PureGrowth requires: rICB, tau_ic, exponent_growth.")
 
     def growth_ic(self, t):
         if self.exponent_growth == 0.:
@@ -396,7 +405,8 @@ class PureGrowth(ModelTRG):
             if t <= 0.:
                 return 0.
             else:
-                return self.exponent_growth * self.rICB * (t / self.tau_ic)**(self.exponent_growth - 1.)
+                return self.exponent_growth * self.rICB * \
+                    (t / self.tau_ic)**(self.exponent_growth - 1.)
 
     def radius_ic(self, t):
         return self.rICB * (t / self.tau_ic)**self.exponent_growth
@@ -424,7 +434,8 @@ class TranslationGrowth(ModelTRG):
             self.exponent_growth
             self.vt
         except NameError:
-            raise NameError("please verify the number of parameters. TranslationGrowth requires: rICB, tau_ic, exponent_growth, vt.")
+            raise NameError(
+                "please verify the number of parameters. TranslationGrowth requires: rICB, tau_ic, exponent_growth, vt.")
 
     def growth_ic(self, t):
         if self.exponent_growth == 0.:
@@ -433,7 +444,8 @@ class TranslationGrowth(ModelTRG):
             if t <= 0.:
                 return 0.
             else:
-                return self.exponent_growth * self.rICB * (t / self.tau_ic)**(self.exponent_growth - 1.)
+                return self.exponent_growth * self.rICB * \
+                    (t / self.tau_ic)**(self.exponent_growth - 1.)
 
     def radius_ic(self, t):
         return self.rICB * (t / self.tau_ic)**self.exponent_growth
@@ -459,7 +471,8 @@ class TranslationGrowthRotation(ModelTRG):
             self.exponent_growth
             self.omega
         except NameError:
-            raise NameError("At least one parameter is missing, please verify. Translation, Growth and Translation require: rICB, tau_ic, vt, exponent_growth, omega.")
+            raise NameError(
+                "At least one parameter is missing, please verify. Translation, Growth and Translation require: rICB, tau_ic, vt, exponent_growth, omega.")
 
     def growth_ic(self, t):
         if self.exponent_growth == 0.:
@@ -468,7 +481,8 @@ class TranslationGrowthRotation(ModelTRG):
             if t <= 0.:
                 return 0.
             else:
-                return self.exponent_growth * self.rICB * (t / self.tau_ic)**(self.exponent_growth - 1.)
+                return self.exponent_growth * self.rICB * \
+                    (t / self.tau_ic)**(self.exponent_growth - 1.)
 
     def radius_ic(self, t):
         return self.rICB * (t / self.tau_ic)**self.exponent_growth
@@ -485,14 +499,14 @@ def translation_velocity(center, amplitude):
 
 
 def radial_derivative(fun, pos, dr, *args):
-    """ compute the radial derivative of function fun(pos, *args) at the point r with finite difference 
+    """ compute the radial derivative of function fun(pos, *args) at the point r with finite difference
 
     d fun/ dr = (fun(r+dr) - fun(r-dr))/(2*dr)
 
     Args:
         fun: a function that is defined as fun(pos, *args)
-        pos: [x, y, z] list 
-        dr: a length <1. 
+        pos: [x, y, z] list
+        dr: a length <1.
         *args: additional arguments required by function fun
     Return the value of the radial derivative.
     """

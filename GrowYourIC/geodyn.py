@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!/usr/bin/env python3
 # Project : From geodynamic to Seismic observations in the Earth's inner core
 # Author : Marine Lasbleis
 
@@ -27,7 +27,6 @@ import numpy as np
 class Model(object):
     """Base class for all the geodynamical models"""
 
-
     def set_parameters(self, dict_param):
         """ add any parameter of the form {'param':value} as self.param = value """
         for k, v in dict_param.items():
@@ -51,7 +50,7 @@ class Model(object):
     def define_units(self):
         """Define the units"""
         # parameters have been given in non-dimensional forms.
-        if self.units == None:
+        if self.units is None:
             # if units have been given separately
             # we need (time_unit, length_unit), (time_unit, velocity_unit) or
             # (length_unit, velocity_unit). For now, let's say we have
@@ -82,16 +81,19 @@ def evaluate_proxy(dataset, method, proxy_type="", verbose=True, info=True):
         dataset : a data.SeismicData object
         method : a geodyn.Model  object
         """
-    if proxy_type=="": proxy_type = method.proxy_type
+    if proxy_type == "":
+        proxy_type = method.proxy_type
     if info:
         print("===")
-        print("== Evaluate value of proxy for all points of the data set ")
+        print("== Evaluating value of proxy for all points of the data set ")
         print("= Geodynamic model is {}".format(method.name))
         print("= Proxy is {}".format(proxy_type))
         print("= Data set is {}".format(dataset.name))
         print("= Proxy is evaluated for {}".format(dataset.method))
         if dataset.method == "raypath":
-            print("=== Raypath is {} number of points".format(dataset.NpointsRaypath))
+            print(
+                "=== Raypath is {} number of points".format(
+                    dataset.NpointsRaypath))
         print("= Number of points to examine: {}".format(dataset.size))
 
     method.verification()
@@ -113,7 +115,8 @@ def evaluate_proxy(dataset, method, proxy_type="", verbose=True, info=True):
             dataset.data_points[i].straight_in_out(number_points + 2)
             raypath = ray.points
             proxy[i] = average_proxy(raypath, method, proxy_type)
-    if info: print("===")
+    if info:
+        print("===")
     return np.array(proxy).astype(float)
 
 
@@ -127,7 +130,7 @@ def average_proxy(ray, method, proxy_type):
     try:
         methode.evaluation
     except (NameError, AttributeError):
-        method.evaluation = None  #in case the variable was not defined. 
+        method.evaluation = None  # in case the variable was not defined.
 
     if method.evaluation == "inverse":
         for _, point in enumerate(ray):
